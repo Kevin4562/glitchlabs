@@ -24,6 +24,11 @@ def make_glitcher(glitcher_id: str, **kw):
             raise GlitcherUnavailable(f"ChipWhisperer Husky unavailable: {exc}") from exc
     if gid in ("simulator", "sim"):
         return SimulatorGlitcher(**kw)
-    raise GlitcherUnavailable(
-        f"unknown glitcher plugin {glitcher_id!r}; select an explicit live adapter or 'simulator'"
-    )
+    try:
+        from ...connections.registry import load_private_glitcher_class
+        cls = load_private_glitcher_class(gid)
+        return cls(**kw)
+    except Exception as exc:
+        raise GlitcherUnavailable(
+            f"private glitcher adapter {glitcher_id!r} unavailable: {exc}"
+        ) from exc

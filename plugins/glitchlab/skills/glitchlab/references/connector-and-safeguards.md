@@ -32,6 +32,25 @@ api_version = 1
 entrypoint = "connector:MyTargetConnection"
 ```
 
+Most targets should use a bundled generic delivery adapter such as
+`chipwhisperer_husky`. If the target needs a proven power/reset sequence,
+trigger mode, or acquisition contract that cannot be expressed by the generic
+adapter, keep that implementation private beside the connector and add:
+
+```toml
+[glitcher]
+id = "my-target-delivery"
+api_version = 1
+entrypoint = "adapter:MyTargetGlitcher"
+```
+
+The private adapter class must subclass `glitchlab.io.glitcher.base.GlitcherAdapter`.
+Select its `id` in the private target profile's `glitcher.plugin` field. GlitchLab
+loads it from the fingerprinted connector bundle; it is never copied into the
+marketplace plugin. Use this extension only when target-specific delivery logic
+is necessary, and cover its connect, preflight, minimum-energy attempt,
+preservation, recovery, and fail-closed paths with private tests.
+
 Import the public SDK from `glitchlab.connections`. Subclass `ConnectionModule`; declare `ConnectionCapabilities` truthfully; define a strict JSON-schema-like `static_config_schema`; and use `DynamicParameter` for values that may vary by sweep.
 
 Do not store credentials or physical addresses in Python. Put private values in the local target profile or environment variables, validate them at construction, and redact them from returned status.

@@ -71,6 +71,8 @@ class ConnectorDescriptor:
     root: Path
     entrypoint: str
     api_version: int
+    glitcher_id: str | None
+    glitcher_entrypoint: str | None
     fingerprint: str
     files: tuple[dict[str, Any], ...]
 
@@ -84,6 +86,10 @@ class ConnectorDescriptor:
             "id": self.connector_id, "display_name": self.display_name,
             "description": self.description, "root": str(self.root), "source": source,
             "entrypoint": self.entrypoint, "api_version": self.api_version,
+            "private_glitcher": ({
+                "id": self.glitcher_id,
+                "entrypoint": self.glitcher_entrypoint,
+            } if self.glitcher_id else None),
             "fingerprint": self.fingerprint, "files": list(self.files),
         }
 
@@ -93,6 +99,7 @@ class ConnectorRegistry:
         self.roots = roots or default_connector_roots()
         self._descriptors: dict[str, ConnectorDescriptor] = {}
         self._classes: dict[tuple[str, str], type[ConnectionModule]] = {}
+        self._components: dict[tuple[str, str, str], type[Any]] = {}
 
     def refresh(self) -> list[ConnectorDescriptor]:
         found: dict[str, ConnectorDescriptor] = {}
@@ -117,6 +124,20 @@ class ConnectorRegistry:
                 )
             if connector_id in found:
                 raise ValueError(f"duplicate connector id {connector_id!r}")
+            glitcher = data.get("glitcher") or {}
+            if not isinstance(glitcher, Mapping):
+                raise ValueError(f"{manifest_path} [glitcher] must be a mapping")
+            glitcher_id = _normalise(glitcher.get("id", "")) or None
+            glitcher_entrypoint = str(glitcher.get("entrypoint") or "") or None
+            if bool(glitcher_id) != bool(glitcher_entrypoint):
+                raise ValueError(
+                    f"{manifest_path} [glitcher] requires both id and entrypoint"
+                )
+            if glitcher and int(glitcher.get("api_version", 0)) != CONNECTOR_API_VERSION:
+                raise ValueError(
+                    f"private glitcher {glitcher_id!r} uses API "
+                    f"{glitcher.get('api_version')}; expected {CONNECTOR_API_VERSION}"
+                )
             root_dir = manifest_path.parent.resolve()
             fingerprint, files = _fingerprint(root_dir)
             found[connector_id] = ConnectorDescriptor(
@@ -126,6 +147,8 @@ class ConnectorRegistry:
                 root=root_dir,
                 entrypoint=str(section.get("entrypoint") or "connector:Connector"),
                 api_version=api_version,
+                glitcher_id=glitcher_id,
+                glitcher_entrypoint=glitcher_entrypoint,
                 fingerprint=fingerprint,
                 files=tuple(files),
             )
@@ -142,14 +165,14 @@ class ConnectorRegistry:
                 f"unknown connector {connector_id!r}; discovered: {', '.join(sorted(self._descriptors))}"
             ) from exc
 
-    def load_class(self, descriptor: ConnectorDescriptor) -> type[ConnectionModule]:
-        key = (descriptor.connector_id, descriptor.fingerprint)
-        cached = self._classes.get(key)
+    def _load_component(self, descriptor: ConnectorDescriptor, entrypoint: str) -> type[Any]:
+        key = (descriptor.connector_id, descriptor.fingerprint, entrypoint)
+        cached = self._components.get(key)
         if cached is not None:
             return cached
-        module_part, separator, attribute = descriptor.entrypoint.partition(":")
+        module_part, separator, attribute = entrypoint.partition(":")
         if not separator or not module_part or not attribute:
-            raise ValueError(f"invalid connector entrypoint {descriptor.entrypoint!r}")
+            raise ValueError(f"invalid private entrypoint {entrypoint!r}")
         package_name = (
             "_glitchlab_workspace_connector_"
             + re.sub(r"[^a-z0-9_]", "_", descriptor.connector_id)
@@ -171,11 +194,46 @@ class ConnectorRegistry:
         module_name = package_name if module_part in {".", "__init__"} else f"{package_name}.{module_part}"
         module = importlib.import_module(module_name)
         cls = getattr(module, attribute)
+        if not isinstance(cls, type):
+            raise TypeError(f"private entrypoint {entrypoint!r} must resolve to a class")
+        self._components[key] = cls
+        return cls
+
+    def load_class(self, descriptor: ConnectorDescriptor) -> type[ConnectionModule]:
+        key = (descriptor.connector_id, descriptor.fingerprint)
+        cached = self._classes.get(key)
+        if cached is not None:
+            return cached
+        cls = self._load_component(descriptor, descriptor.entrypoint)
         if not isinstance(cls, type) or not issubclass(cls, ConnectionModule):
             raise TypeError(
                 f"connector {descriptor.connector_id!r} entrypoint must subclass ConnectionModule"
             )
         self._classes[key] = cls
+        return cls
+
+    def load_glitcher_class(self, glitcher_id: str) -> type[Any]:
+        """Load a fingerprinted private delivery adapter without opening hardware."""
+        canonical = _normalise(glitcher_id)
+        matches = [
+            descriptor for descriptor in self.refresh()
+            if descriptor.glitcher_id == canonical
+        ]
+        if not matches:
+            raise ValueError(f"unknown private glitcher adapter {glitcher_id!r}")
+        if len(matches) != 1:
+            owners = ", ".join(sorted(item.connector_id for item in matches))
+            raise ValueError(
+                f"duplicate private glitcher adapter {glitcher_id!r}: {owners}"
+            )
+        descriptor = matches[0]
+        assert descriptor.glitcher_entrypoint is not None
+        cls = self._load_component(descriptor, descriptor.glitcher_entrypoint)
+        from ..io.glitcher.base import GlitcherAdapter
+        if not issubclass(cls, GlitcherAdapter):
+            raise TypeError(
+                f"private glitcher {glitcher_id!r} must subclass GlitcherAdapter"
+            )
         return cls
 
     def describe(self) -> list[dict[str, Any]]:
@@ -224,6 +282,11 @@ def load_connection_class(connector_id: str) -> type[ConnectionModule]:
     """Load one connector class without instantiating it or opening hardware."""
     descriptor = _REGISTRY.descriptor(connector_id)
     return _REGISTRY.load_class(descriptor)
+
+
+def load_private_glitcher_class(glitcher_id: str) -> type[Any]:
+    """Load a private adapter declared beside a private connector."""
+    return _REGISTRY.load_glitcher_class(glitcher_id)
 
 
 def refresh_connectors() -> list[dict[str, Any]]:
@@ -309,7 +372,11 @@ def connector_sdk_instructions() -> dict[str, Any]:
             "connector": {
                 "id": "uart-example", "display_name": "UART Example",
                 "api_version": 1, "entrypoint": "connector:UartConnection",
-            }
+            },
+            "optional_private_glitcher": {
+                "id": "my-target-delivery", "api_version": 1,
+                "entrypoint": "adapter:MyTargetGlitcher",
+            },
         },
         "python_contract": (
             "from glitchlab.connections import ConnectionModule, ConnectionReading, "

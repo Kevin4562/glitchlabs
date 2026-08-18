@@ -10,6 +10,8 @@ import pytest
 from glitchlab import config
 from glitchlab.app_core import get_core
 from glitchlab.connections import describe_connectors, make_connection_from_config
+from glitchlab.connections.registry import ConnectorRegistry
+from glitchlab.io.glitcher.base import GlitcherAdapter
 from glitchlab.mcp_server import build_server
 from glitchlab.viewer.app import build_viewer
 
@@ -62,6 +64,52 @@ def test_only_bundled_connector_is_nonfunctional_template() -> None:
     result = connector.connect()
     assert result["ok"] is False
     assert result["template_only"] is True
+
+
+def test_private_connector_can_supply_fingerprinted_glitcher_adapter(tmp_path: Path) -> None:
+    connector_root = tmp_path / "private-target"
+    connector_root.mkdir()
+    (connector_root / "__init__.py").write_text("", encoding="utf-8")
+    (connector_root / "connector.py").write_text(
+        "from glitchlab.connections import ConnectionModule\n"
+        "class PrivateConnection(ConnectionModule):\n"
+        "    connector_id = 'private-target'\n"
+        "    def read(self, context=None):\n"
+        "        raise NotImplementedError\n",
+        encoding="utf-8",
+    )
+    (connector_root / "adapter.py").write_text(
+        "from glitchlab.io.glitcher.base import GlitcherAdapter\n"
+        "class PrivateGlitcher(GlitcherAdapter):\n"
+        "    id = 'private-delivery'\n"
+        "    @property\n"
+        "    def connected(self): return False\n"
+        "    def connect(self): return {'ok': False}\n"
+        "    def disconnect(self): return None\n"
+        "    def capabilities(self): return {}\n"
+        "    def prepare(self): return {'ok': False}\n"
+        "    def attempt(self, params, payload=None): raise RuntimeError('test only')\n"
+        "    def power_cycle(self): return {'ok': False}\n"
+        "    def program_target(self, hexfile, mcu=''): return {'ok': False}\n"
+        "    def safe_shutdown(self): return None\n",
+        encoding="utf-8",
+    )
+    (connector_root / "glitchlab_connector.toml").write_text(
+        "[connector]\n"
+        "id = 'private-target'\n"
+        "api_version = 1\n"
+        "entrypoint = 'connector:PrivateConnection'\n\n"
+        "[glitcher]\n"
+        "id = 'private-delivery'\n"
+        "api_version = 1\n"
+        "entrypoint = 'adapter:PrivateGlitcher'\n",
+        encoding="utf-8",
+    )
+    registry = ConnectorRegistry(roots=[tmp_path])
+    cls = registry.load_glitcher_class("private-delivery")
+    assert issubclass(cls, GlitcherAdapter)
+    descriptor = registry.descriptor("private-target").public()
+    assert descriptor["private_glitcher"]["id"] == "private-delivery"
 
 
 def test_notifications_are_private_and_redacted() -> None:

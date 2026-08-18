@@ -1,6 +1,6 @@
 [project]
 name = "glitchlab"
-version = "2.0.0"
+version = "2.0.1"
 description = "GlitchLab standalone MCP server and browser UI"
 requires-python = ">=3.11,<3.14"
 dependencies = [

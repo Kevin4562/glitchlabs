@@ -25,7 +25,7 @@ def build_server(core=None) -> MCPServer:
     srv = MCPServer(
         name="GlitchLab",
         title="GlitchLab — Fault-Injection Campaign Server",
-        version="2.0.0",
+        version="2.0.1",
         instructions=(
             "GlitchLab runs bounded, evidence-preserving fault-injection campaigns. Call "
             "get_glitchlab_status to obtain the browser UI URL, then get_workflow_state and "

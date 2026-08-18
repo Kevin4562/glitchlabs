@@ -30,7 +30,7 @@ async def test_stdio_initialization_tools_and_dynamic_ui(tmp_path: Path) -> None
 
     payload = status.structured_content
     assert initialized.server_info.name == "GlitchLab"
-    assert initialized.server_info.version == "2.0.0"
+    assert initialized.server_info.version == "2.0.1"
     assert len(tools.tools) == 77
     assert payload["ok"] is True
     assert payload["dynamic_port"] is True
