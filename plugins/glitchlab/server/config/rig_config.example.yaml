@@ -1,0 +1,30 @@
+# Safe simulation-first defaults. Copying and editing happens in GlitchLab's
+# per-user data directory; the installed plugin remains immutable.
+rig:
+  name: "GlitchLab simulation rig"
+  glitcher: "simulator"
+  target_model: "SIMULATED_UNKNOWN_TARGET"
+  target_package: "virtual"
+  project_profile: "generic-target.yaml"
+  operator: "operator"
+
+notifications:
+  ntfy_enabled: false
+  ntfy_topic: ""
+  ntfy_base_url: "https://ntfy.sh"
+
+limits:
+  scope_source:
+    amplitude_vpp_max: 0.0
+    offset_v_abs_max: 0.0
+    frequency_hz_max: 0
+    used: false
+  scope_input:
+    rated_max_input_v: 5.0
+    require_probe_ratio: true
+
+instruments:
+  scope:
+    expected_idn_contains: ""
+    hint_ip: ""
+    resource_candidates: []

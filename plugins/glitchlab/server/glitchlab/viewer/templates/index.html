@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>GlitchLab — Fault-Injection Campaign Dashboard</title>
+<link rel="stylesheet" href="/static/app.css?v=20260818-wave-navigation"/>
+</head>
+<body>
+<div class="app">
+  <!-- ===================== LEFT RAIL ===================== -->
+  <div class="rail">
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>
+    </div>
+    <div class="navcol">
+      <div class="nav" data-page="home" data-mcp="nav_home" data-tip="§Home§Top-level overview: totals across all campaigns, bound instruments, and the enforced safety state."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></div>
+      <div class="nav" data-page="campaigns" data-mcp="nav_campaigns" data-tip="§Campaigns§Browse every engagement in the store. A campaign is a logical goal that can span sessions, units and days. Click one to make it the active campaign."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 5h16M4 12h16M4 19h9"/></svg></div>
+      <div class="nav active" data-page="live" data-mcp="nav_live" data-tip="§Live Sweep§The signature screen. Watch the parameter-space heatmap, outcome tiles, rolling hit-rate and attempts fill in real time as the glitcher fires. This is where you start and control a sweep."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h4l2-7 3 12 2.5-8 2 3h4.5"/></svg></div>
+      <div class="nav" data-page="paramdb" data-mcp="nav_paramdb" data-tip="§Parameter DB§Configured defaults and saved parameter presets. Stored presets are fully confirmed only while their linked attempt passes the complete connector contract."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6"/><path d="M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3"/></svg></div>
+      <div class="nav" data-page="instruments" data-mcp="nav_instruments" data-tip="§Instruments§Optional companion scope status, trace summary, and bench inventory. Direct scope access is unavailable while project-managed evidence owns the device."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="M5.5 13h3l1.5-4 2 7 1.5-3h5"/></svg></div>
+      <div class="nav" data-page="settings" data-mcp="nav_settings" data-tip="§Settings§The active target safety envelope, rig-wide instrument limits, notification status, and append-only audit log."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/></svg></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="mcpind on" id="mcpind" data-tip="§SERVER LINKED§This browser has a live WebSocket to GlitchLab. It does not prove an MCP client or instrument is connected.">
+      <div class="mcpdot"><div class="d"></div><div class="r"></div></div>
+      <div class="mcplbl">SERVER<br>LINKED</div>
+    </div>
+  </div>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <div class="topbar">
+      <div class="projsel" id="projsel" onclick="toggleProjMenu(event)" data-tip="§Project browser§Switch between project data without changing or interrupting the active rig campaign. The project attached to the rig is marked separately.">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7.5 5 5h5l2 2.5h7v11H3z"/></svg>
+        <span id="proj-name">Default project</span><span style="color:var(--tx3)">▾</span>
+      </div>
+      <div class="vsep"></div>
+      <div class="crumb"><span class="c1">Campaigns</span><span class="sl">/</span>
+        <span class="c2" id="crumb-camp">No campaign selected</span><span class="sl">/</span>
+        <span class="c3" id="crumb">Live Sweep</span></div>
+      <div class="vsep"></div>
+      <div class="readout" data-tip="§Throughput§Live injection rate (attempts per second) and Σ = total attempts recorded this campaign. Fault-injection is probabilistic, so throughput drives the ETA to the next success."><span class="rate" id="rd-rate">0.0</span><span class="u">att/s</span>
+        <span class="sl" style="color:var(--line2)">·</span>
+        <span class="u">Σ</span><span class="tot" id="rd-total">0</span>
+        <span class="u" id="rd-eta"></span></div>
+      <div class="spring"></div>
+      <div class="themebtn" data-mcp="theme_toggle" onclick="toggleTheme()" data-tip="§Theme§Toggle between the dark instrumentation theme and a light theme. Both are validated for contrast."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7"/></svg><span id="theme-lbl">DARK</span></div>
+    </div>
+
+    <div class="target-state-banner" id="target-state-banner" role="alert" aria-live="assertive" hidden>
+      <div class="target-state-icon">!</div>
+      <div class="target-state-copy">
+        <div class="target-state-title" id="target-state-title">TARGET STATE PRESERVED — NO ACTUATION</div>
+        <div class="target-state-reason" id="target-state-reason">Loading the durable target-state interlock…</div>
+        <div class="target-state-rule">Start, preflight, current-state connection, recovery, and all companion scope access are disabled. Review/export evidence. Explicit discard is MCP-only and destructive.</div>
+      </div>
+      <div class="target-state-source" id="target-state-source">persisted interlock</div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ HOME ============ -->
+      <div class="view" data-page="home">
+        <div style="display:flex;flex-direction:column;gap:12px;height:100%;width:100%;overflow-y:auto">
+          <div class="card" style="flex:none;padding:11px 13px" data-tip="Home — a top-level overview of GlitchLab: totals across campaigns, bound instruments, and enforced safety state. Guarded human controls are on Live Sweep.">
+            <div style="display:flex;align-items:baseline;gap:10px"><span class="title" style="font-size:14px">GlitchLab</span>
+              <span class="sub">Fault-Injection Campaign Server · the model gets meaning, the human gets pixels</span></div>
+          </div>
+          <div class="hero" id="home-hero"></div>
+          <div class="grid4" style="grid-template-columns:1fr 1fr;flex:none">
+            <div class="card" data-tip="The physical rig and its effective safety envelope. Target limits live with the selected project; optional rig-wide caps can only make them more restrictive."><div class="card-h"><span class="title" style="font-size:12px">Rig & safety</span></div><div class="kv" id="home-rig"></div></div>
+            <div class="card" data-tip="Instruments bound over MCP and their live status."><div class="card-h"><span class="title" style="font-size:12px">Instruments</span></div><div class="kv" id="home-inst"></div></div>
+          </div>
+          <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column" data-tip="Every campaign in the store. Click a campaign to open it.">
+            <div class="card-h"><span class="title" style="font-size:12.5px">Campaigns</span><span class="sub">click to open</span></div>
+            <div class="campgrid" id="home-campaigns" style="overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CAMPAIGNS ============ -->
+      <div class="view" data-page="campaigns">
+        <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column" data-tip="Campaign browser — one card per engagement (a logical goal that may span sessions, units and days). Click a card to make it the active campaign for the Live Sweep board.">
+          <div class="card-h"><span class="title" style="font-size:12.5px">Campaign browser</span>
+            <span class="sub" id="camp-count">—</span><div class="spring"></div>
+            <input class="inp searchinp" id="campaign-search" type="search" placeholder="Search campaigns…" aria-label="Search campaigns" oninput="filterCampaigns(this.value)"></div>
+          <div class="campgrid" id="camp-cards" style="overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- ============ LIVE SWEEP ============ -->
+      <div class="view active" data-page="live">
+        <div style="display:flex;gap:12px;height:100%;width:100%">
+          <aside class="activity-panel card" aria-label="Action activity">
+            <div class="card-h"><span class="title" style="font-size:12px" data-tip="§Action activity§A live tail of UI and visible MCP actions. Use the audit log for authoritative provenance.">Action activity</span></div>
+            <div class="log" id="agentlog"><div><span class="t">ready</span> <span class="ok">→</span> waiting for activity</div></div>
+          </aside>
+          <!-- main column -->
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto">
+            <div class="tiles" id="tiles"></div>
+
+            <div class="card resizable" style="flex:none;height:500px;min-height:300px;resize:vertical;overflow:hidden;display:flex;flex-direction:column">
+              <div class="card-h">
+                <span class="title" data-tip="§Parameter-space map§Small runs show each recorded attempt. Larger runs adaptively bin the same persisted records. Orange is a candidate; green is confirmed. Hover a mark for its detail.">Parameter space</span>
+                <span class="sub" id="hm-sub">glitch width × ext-offset</span>
+                <div class="spring"></div>
+                <span class="chip" id="hm-bin" data-tip="§Cells§How many parameter cells currently hold data. The grid is binned so cells stay square and readable no matter how many values you sweep.">bin: auto</span>
+                <button type="button" class="scope-toggle" id="ps-scope" onclick="togglePsScope()" data-tip="§Heatmap coverage§Shows data from the selected campaign, or the union of all campaigns in the selected project. This changes the map only; attempt filters and outcome totals remain scoped to the selected campaign.">MAP: CAMPAIGN</button>
+                <div class="btn" data-mcp="refresh_map" onclick="refreshLive()" data-tip="§Refresh§Re-pull the full map, tiles and stats from the store.">↻ refresh</div>
+              </div>
+              <div class="legendrow" id="legendrow"></div>
+              <div class="hm-wrap" style="flex:1;min-height:0;overflow:hidden"><svg class="hm" id="heatmap" viewBox="0 0 852 400" preserveAspectRatio="xMidYMid meet" style="height:100%"></svg></div>
+            </div>
+
+            <div class="card resizable" style="flex:none;height:320px;min-height:180px;resize:vertical;overflow:hidden;display:flex;flex-direction:column">
+              <div class="card-h">
+                <span class="title" data-tip="§Attempts§Every injection with pulse width, external offset, outcome, connector source, and physical timing. Click evidence to inspect hardware readback and persisted connector gates.">Attempts</span><span class="sub" id="att-count">0 rows</span>
+                <div class="vsep" style="height:16px;margin:0 3px"></div>
+                <div id="filters" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+                <div class="spring"></div>
+              </div>
+              <div class="tbl-h" style="grid-template-columns:56px 72px 84px 52px 48px 118px 126px 118px minmax(240px,1fr)">
+                <span>#</span><span>PULSE</span><span>EXT-OFF</span><span>V</span><span>REP</span><span>OUTCOME</span><span>DIP</span><span>WAVEFORM</span><span>VERIFICATION</span>
+              </div>
+              <div class="tbl-scroll" id="atbody"></div>
+            </div>
+          </div>
+
+          <!-- right column -->
+          <div class="right-panel">
+            <!-- run readiness -->
+            <div class="card" id="workflow-card" style="display:none" hidden aria-hidden="true">
+              <div class="card-h">
+                <span class="title" data-tip="§Run readiness§GlitchLab combines rig safety, preflight, timing, operator acknowledgment, and connector evidence here. The connector supplies target-specific classification; it is only one part of readiness.">Run readiness</span>
+                <span class="chip" id="workflow-overall">CHECKING</span><div class="spring"></div>
+                <div class="btn" data-mcp="refresh_workflow" onclick="loadWorkflow()">↻ state</div>
+              </div>
+              <div class="gategrid" id="workflow-gates">
+                <div class="gaterow"><span class="gdot" id="gate-target-dot"></span><span>target-state interlock</span><b id="gate-target">—</b></div>
+                <div class="gaterow"><span class="gdot" id="gate-profile-dot"></span><span>project + connector</span><b id="gate-profile">—</b></div>
+                <div class="gaterow"><span class="gdot" id="gate-husky-dot"></span><span>glitcher connection</span><b id="gate-husky">—</b></div>
+                <div class="gaterow"><span class="gdot" id="gate-preflight-dot"></span><span>staged preflight</span><b id="gate-preflight">—</b></div>
+                <div class="gaterow"><span class="gdot" id="gate-timing-dot"></span><span>physical timing</span><b id="gate-timing">—</b></div>
+                <div class="gaterow"><span class="gdot" id="gate-ack-dot"></span><span>target limits acknowledged</span><b id="gate-ack">—</b></div>
+                <div class="gaterow"><span class="gdot candidate" id="gate-candidate-dot"></span><span>candidates / partials</span><b id="gate-candidate">0</b></div>
+                <div class="gaterow"><span class="gdot confirmed" id="gate-confirmed-dot"></span><span>fully confirmed</span><b id="gate-confirmed">0</b></div>
+              </div>
+              <div class="workflow-next" id="workflow-next">Reading deterministic next action…</div>
+              <div style="display:flex;gap:6px;padding:0 10px 10px">
+                <div class="btn" data-mcp="run_preflight" onclick="runPreflight()">1 · preflight</div>
+                <div class="btn" data-mcp="discover_timing" onclick="discoverTiming()" data-tip="§Physical timing§Uses the optional companion scope only when the project permits it. Evidence-owned projects validate their declared physical window through project preflight and disable this control.">2 · timing</div>
+                <div class="btn" data-mcp="acknowledge_target" onclick="acknowledgeTarget()">3 · acknowledge</div>
+              </div>
+            </div>
+
+            <!-- sweep control -->
+            <div class="card campaign-control-card" id="campaign-control" style="flex:none">
+              <div class="card-h"><span class="title" data-tip="§Campaign control§Edit the next sweep directly. A running sweep remains immutable; edits are used by the next dry-run and do not interrupt it. Live mode still enforces the active target safety envelope and requires this exact plan to pass dry-run first.">Campaign control</span>
+                <span class="ctag" style="margin-left:2px">CAUTION</span><div class="spring"></div>
+                <div class="btn" id="recipe-lock" onclick="resetSweepDefaults()" data-tip="§Project defaults§Restore the configured starting values. You may edit them afterward.">↺ defaults</div>
+                <span class="sub" id="ctl-status">idle</span></div>
+              <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+                <div class="fld" data-tip="§Campaign name§A human label for this engagement. A campaign groups sessions, units and sweeps toward one goal. Reflects the ACTIVE campaign while a sweep runs."><div class="l">CAMPAIGN</div><input class="inp" data-mcp-field="campaign_name" id="f-campaign" value="—"></div>
+                <div class="sunkbox" data-tip="§Connector§Workspace-owned target connection/classification module. Modules hot-register from sibling folders and define their own sweep parameters.">
+                  <div class="l">CONNECTOR</div>
+                  <select class="inp" id="f-connector" data-mcp-field="connector_id" onchange="renderConnectorParameters()" onfocus="loadConnectors()"></select>
+                  <div id="connector-source" style="font:500 9.5px/1.45 var(--mono);color:var(--tx3);margin-top:5px">scanning workspace modules…</div>
+                  <div id="connector-params" style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                  <div class="fld" data-tip="§Pulse minimum§Smallest pulse duration requested, in glitch-clock cycles."><div class="l">PULSE MIN (cyc)</div><input class="inp" type="number" data-mcp-field="width_min" id="f-wmin" value="" placeholder="1"></div>
+                  <div class="fld" data-tip="§Pulse maximum§Largest pulse duration requested, bounded by the active target safety envelope."><div class="l">PULSE MAX (cyc)</div><input class="inp" type="number" data-mcp-field="width_max" id="f-wmax" value="" placeholder="1"></div>
+                  <div class="fld" data-tip="§Pulse step§Increment between pulse values."><div class="l">STEP</div><input class="inp" type="number" data-mcp-field="width_step" id="f-wstep" value="1" min="0.000001"></div>
+                </div>
+                <div class="sunkbox" data-tip="§Device calibration§Fixed calibration values supplied by the active project and their device readback, when available."><div class="l">DEVICE CALIBRATION</div><div id="phase-profile" style="font:600 10.5px/1.5 var(--mono);color:var(--tx2)">loading project calibration…</div></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                  <div class="fld" data-tip="§Offset minimum§Smallest hardware trigger offset requested."><div class="l">EXT-OFF MIN</div><input class="inp" type="number" data-mcp-field="offset_min" id="f-omin" value="" placeholder="0"></div>
+                  <div class="fld" data-tip="§Offset maximum§Largest hardware trigger offset requested, bounded by the active target safety envelope."><div class="l">EXT-OFF MAX</div><input class="inp" type="number" data-mcp-field="offset_max" id="f-omax" value="" placeholder="0"></div>
+                  <div class="fld" data-tip="§Offset step§Increment between offset values."><div class="l">STEP</div><input class="inp" type="number" data-mcp-field="offset_step" id="f-ostep" value="1" min="0.000001"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div class="fld" data-tip="§Repeats per cell§Independent attempts at each parameter combination."><div class="l">REPEATS/CELL</div><input class="inp" type="number" data-mcp-field="repeats" id="f-rep" value="1" min="1"></div>
+                  <div class="fld" data-tip="§Dry-run§ON by default. Start Sweep validates the exact plan without connecting, arming, or pulsing."><div class="l">DRY-RUN</div><div class="minitog on" id="dryrun" data-mcp="dry_run_toggle" onclick="toggleDry()" style="margin-top:5px"><span class="k"></span></div></div>
+                </div>
+                <div class="fld" data-tip="§Injection path§Choose the available hardware path. Rig safety policy decides which combinations are allowed."><div class="l">INJECTION PATH</div>
+                  <div style="display:flex;gap:6px;margin-top:3px">
+                    <span class="mostog" id="mos-lp" onclick="toggleMos('lp')" aria-disabled="false">LP</span>
+                    <span class="mostog" id="mos-hp" onclick="toggleMos('hp')" aria-disabled="false">HP</span>
+                  </div></div>
+                <div style="display:flex;gap:8px;margin-top:2px">
+                  <div class="btn acc" id="btn-startstop" data-mcp="start_sweep" style="flex:1;justify-content:center" onclick="onStartStop()" data-tip="§Start / Stop Sweep§When idle this persists the form as an immutable plan. Dry-run validates it; live execution requires that exact validation plus readiness and rig bounds. Editing while a sweep runs changes only the next plan.">▶ Start Sweep</div>
+                  <div class="btn" id="btn-pauseresume" data-mcp="pause_sweep" style="min-width:96px;justify-content:center" onclick="onPauseResume()" data-tip="§Pause / Resume§Suspend the running sweep (injection output left disarmed) or continue a paused one from where it stopped. Disabled when no sweep is running.">❚❚ Pause</div>
+                </div>
+                <div class="refusal" id="refusal" style="margin-top:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2.4" stroke-linecap="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M5.6 18.4 18.4 5.6"/></svg><div id="refusal-txt" style="font:700 11px/1.35 var(--mono);color:var(--danger)"></div></div>
+              </div>
+            </div>
+
+            <!-- Read-only project connector check against current target state -->
+            <div class="card" id="connector-card" style="flex:none">
+              <div class="card-h">
+                <span class="title" data-tip="§Connector · current state§Run one read-only observation through the selected connector. This check does not power-cycle, assert reset, halt, resume, or write target memory.">Connector · current state</span>
+                <span class="ctag" style="margin-left:2px">EVIDENCE</span>
+                <div class="spring"></div>
+                <div class="btn acc" id="btn-readconnector" data-mcp="read_connector" onclick="readConnector()" data-tip="§Check current state§Run one read-only observation through the configured connector without changing target power or reset state.">⟳ Check current state</div>
+              </div>
+              <div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px">
+                <div id="connector-badge" style="font:700 13px/1.3 var(--mono);color:var(--tx3);padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--sunk);text-align:center">— no read yet —</div>
+                <div class="kv" id="connector-kv" style="font-family:var(--mono)"></div>
+                <div id="connector-evidence" style="font:500 10.5px/1.5 var(--mono);color:var(--tx2);white-space:pre-wrap;word-break:break-word">No current-state connector read yet.</div>
+              </div>
+            </div>
+
+            <!-- rolling hit-rate -->
+            <div class="card" style="flex:none;padding:10px 12px 8px">
+              <div style="display:flex;align-items:baseline;gap:8px">
+                <span class="title" style="font-size:12.5px" data-tip="§Rolling positive rate§Rate of candidate and confirmed outcomes over a moving window. Confirmed attempts remain distinguished in green throughout the UI.">Rolling positive rate</span>
+                <span class="sub">window 200 att</span><div class="spring"></div>
+                <span id="rr-cur" style="font:600 15px/1 var(--mono);color:var(--caution)">0.00%</span>
+                <span id="rr-arrow" style="font:600 9.5px/1 var(--mono);color:var(--caution)">▲</span>
+              </div>
+              <svg id="spark" width="368" height="58" viewBox="0 0 368 58" style="display:block;margin:6px 0 4px;max-width:100%"></svg>
+              <div class="statgrid" style="border-top:1px solid var(--line);padding:7px 0 0">
+                <div><div class="lab">MEDIAN</div><div class="num" id="s-med">—</div></div>
+                <div><div class="lab">MEAN</div><div class="num" id="s-mean">—</div></div>
+                <div><div class="lab">ETA</div><div class="num" id="s-eta">—</div></div>
+                <div><div class="lab">CONFIRMED</div><div class="num" id="s-succ" style="color:var(--ok)">0</div></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ INSTRUMENTS ============ -->
+      <div class="view" data-page="instruments">
+        <div style="display:flex;gap:12px;height:100%;width:100%">
+          <div class="card" style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <div class="card-h"><span style="width:8px;height:8px;border-radius:50%;background:var(--ok)" id="scope-dot"></span>
+              <span class="title" id="scope-title" style="font-size:13px" data-tip="§Companion oscilloscope§A project evidence collector may own the acquisition session exclusively. Companion controls are disabled whenever they could interfere with evidence.">Companion oscilloscope</span>
+              <span class="chip ok" id="scope-bind" data-tip="§Bind status§BOUND means GlitchLab has opened a live SCPI session and read the instrument's real identity/capabilities.">UNBOUND</span><div class="spring"></div>
+              <span class="chip acc" data-tip="§Driven by§Who owns the single SCPI session. Avoid driving the scope from Web Control and MCP simultaneously.">driven by: <span id="scope-driver">—</span></span>
+              <div class="btn" id="scope-bind-btn" data-mcp="bind_scope" onclick="act('bind_scope',{})" data-tip="§Bind companion session§Available only when neither a live glitcher nor the project evidence collector owns the companion scope.">⎌ bind</div>
+              <div class="btn" id="scope-unbind-btn" data-mcp="unbind_scope" onclick="act('unbind_scope',{})" style="display:none" data-tip="§Unbind§Explicitly release the optional companion session so project evidence can own the scope.">⎌ unbind</div></div>
+            <div class="kv" style="border-bottom:1px solid var(--line)">
+              <span class="k">IDN</span><span class="v" id="tr-idn">—</span>
+              <span class="k">RESOURCE</span><span class="v" id="tr-res">—</span>
+              <span class="k">LOCK</span><span class="v" id="scope-lock" style="color:var(--tx2)">not bound</span>
+              <span class="k">POLICY</span><span class="v" id="scope-policy" style="color:var(--tx2)">loading…</span></div>
+            <div style="flex:1;min-height:0;padding:12px 13px;display:flex;flex-direction:column">
+              <div class="scope-frame">
+                <div style="display:flex;align-items:center;gap:8px;padding:5px 9px;border-bottom:1px solid var(--line2);background:var(--panel2)">
+                  <span style="display:flex;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--line2)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--line2)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--line2)"></span></span>
+                  <span style="flex:1;padding:2px 7px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:400 9.5px/1.5 var(--mono);color:var(--tx3)" id="scope-url">scope URL not loaded</span>
+                  <div class="btn acc" id="mode-embed" onclick="scopeMode('embed')" data-tip="§Scope Web Control§Available only when the active project does not reserve the scope for managed evidence.">▶ live scope</div>
+                  <div class="btn" id="mode-mirror" onclick="scopeMode('mirror')" data-tip="§Snapshot (fallback)§A slower GlitchLab-served screenshot mirror over SCPI — only for environments where the live video stream can't render.">◫ snapshot</div>
+                  <div class="btn" id="scope-open-btn" onclick="openScopeWindow()" data-tip="§Open in a window§Available only when the active project does not reserve the scope for managed evidence.">open ↗</div>
+                </div>
+                <div style="flex:1;min-height:0;position:relative;background:#05070A;overflow:hidden">
+                  <img id="scope-mirror" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none" data-tip="§Snapshot (fallback)§A slower screenshot mirror of the configured scope display.">
+                  <iframe id="scope-iframe" src="about:blank" scrolling="no" sandbox="allow-scripts" style="position:absolute;inset:0;width:100%;height:100%;border:0;display:block" data-tip="§Live scope§The configured scope's Web Control view, scaled to fill this pane."></iframe>
+                  <div id="scope-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:#05070A;pointer-events:none">
+                    <div style="width:26px;height:26px;border:2px solid var(--line2);border-top-color:var(--acc);border-radius:50%;animation:spin 1s linear infinite"></div>
+                    <div id="scope-overlay-txt" style="font:500 11px/1.4 var(--mono);color:var(--tx3)">connecting to the oscilloscope…</div>
+                  </div>
+                </div>
+              </div>
+              <div style="text-align:center;font:500 10.5px/1.6 var(--mono);color:var(--tx3);padding-top:7px" data-tip="§Ownership-aware scope viewer§For projects without managed scope evidence, the device page can be embedded. Evidence-owned projects keep every direct WebSocket and companion capture path closed.">Scope Web Control is available only when the active project does not own scope evidence</div>
+            </div>
+          </div>
+          <div style="width:340px;flex:none;display:flex;flex-direction:column;gap:12px">
+            <div class="card"><div class="card-h"><span class="title" style="font-size:12.5px">Trace summary</span>
+              <span class="sub" id="trace-att"></span></div>
+              <div id="trace-rows"></div></div>
+            <div class="dcard"><div class="dh"><span class="dtag">DANGER</span>
+              <span style="font-weight:600;font-size:12px">Probe / input voltage</span></div>
+              <div style="padding:9px 11px;display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;justify-content:space-between;font:400 10.5px/1.4 var(--mono);color:var(--tx2)"><span>CH1 attenuation</span><span style="color:var(--tx);font-weight:600">declared required</span></div>
+                <div style="display:flex;justify-content:space-between;font:400 10.5px/1.4 var(--mono);color:var(--tx2)"><span>Rated max input</span><span style="color:var(--danger);font-weight:600" id="rated-max">—</span></div>
+                <div id="scope-input-mode" style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--sunk);font:600 11px/1.2 var(--mono)">verify probe ratio before acquisition</div>
+              </div></div>
+            <div class="card" style="flex:1"><div class="card-h"><span class="title" style="font-size:12px">Bench</span></div>
+              <div id="bench"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PARAMETER DB ============ -->
+      <div class="view" data-page="paramdb">
+        <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column">
+          <div class="card-h"><span class="title" style="font-size:12.5px">Parameter presets</span>
+            <span class="sub">project defaults + confirmation-linked saved sets</span></div>
+          <div class="tbl-h" style="grid-template-columns:90px 1fr 1fr 1fr 1fr 1fr"><span>TARGET</span><span>INJECTION</span><span>WIDTH</span><span>EXT-OFFSET</span><span>HIT-RATE</span><span>PROVENANCE</span></div>
+          <div class="tbl-scroll" id="kg-body"></div>
+        </div>
+      </div>
+
+      <!-- ============ SETTINGS ============ -->
+      <div class="view" data-page="settings">
+        <div style="display:flex;flex-direction:column;gap:12px;height:100%;width:100%;overflow-y:auto">
+          <div class="card" style="flex:none"><div class="card-h"><span class="title" style="font-size:12.5px">Rig & target safety</span>
+            <span class="chip">effective target limits</span></div>
+            <div class="settings-grid">
+              <div class="settings-section"><div class="l">RIG</div><div class="kv" id="rig-summary"></div></div>
+              <div class="settings-section"><div class="l">TARGET GLITCH ENVELOPE</div><div class="kv" id="rig-glitch-limits"></div></div>
+              <div class="settings-section"><div class="l">TARGET POWER</div><div class="kv" id="rig-power-limits"></div></div>
+              <div class="settings-section"><div class="l">RECOVERY + RATE</div><div class="kv" id="rig-rate-limits"></div></div>
+            </div></div>
+          <div class="card" style="flex:none"><div class="card-h"><span class="title" style="font-size:12.5px">Private notifications</span><span class="sub">saved only in your local GlitchLab data directory</span><div class="spring"></div><div class="btn" id="notification-test" onclick="act('test_notification',{})">send test</div></div>
+            <div class="notification-form">
+              <label class="notification-check"><input id="notification-enabled" type="checkbox"> enable ntfy alerts</label>
+              <div class="fld"><div class="l">TOPIC</div><input class="inp" id="notification-topic" type="password" autocomplete="off" placeholder="enter a private topic"></div>
+              <div class="fld"><div class="l">BASE URL</div><input class="inp" id="notification-base" value="https://ntfy.sh"></div>
+              <div class="btn acc" onclick="saveNotificationSettings()">save privately</div>
+            </div>
+            <div class="notification-status" id="notification-status">Loading notification configuration…</div></div>
+          <div class="card" style="flex:none"><div class="card-h"><span class="title" style="font-size:12.5px">Audit log</span>
+            <span class="sub">every write & actuation</span></div>
+            <div class="tbl-h" style="grid-template-columns:1fr 90px 90px 1fr"><span>TOOL</span><span>DANGER</span><span>DECISION</span><span>VIOLATED RULE</span></div>
+            <div id="audit-body" style="max-height:320px;overflow-y:auto"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="toast-wrap" id="toasts"></div>
+<div id="projmenu" class="projmenu">
+  <div class="pm-title">Projects — browse without interrupting the rig</div>
+  <div id="pm-list"></div>
+  <div class="pm-new">
+    <input id="pm-newname" class="inp" placeholder="new project name…" onclick="event.stopPropagation()">
+    <div class="btn acc" onclick="createProject(event)" data-tip="§New project§Create a clean data namespace. Connecting a rig to it is a separate setup step.">+ create</div>
+  </div>
+</div>
+<div id="tip"></div>
+<script src="/static/app.js?v=20260818-wave-navigation"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "glitchlabs",
+  "interface": {
+    "displayName": "GlitchLab"
+  },
+  "plugins": [
+    {
+      "name": "glitchlab",
+      "source": {
+        "source": "local",
+        "path": "./plugins/glitchlab"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+schema_version: "glitchlab.target/v1"
+id: "generic-simulator"
+title: "Generic simulated target"
+description: "A non-hardware profile used to verify installation and learn the workflow."
+
+target:
+  model: "SIMULATED_UNKNOWN_TARGET"
+  authorization_note: "Simulation only"
+
+glitcher:
+  plugin: "simulator"
+  config:
+    success_center: [7.0, 1000.0]
+    success_sigma: [1.5, 320.0]
+    peak_rate: 0.18
+
+connector:
+  id: "generic-example"
+  parameters:
+    confirmation_reads: 2
+    preserve_on_partial: true
+
+safety_limits:
+  glitch:
+    pulse_cycles_max: 32
+    ext_offset_min: 0
+    ext_offset_max: 5000
+    num_glitches_max: 1
+    repeat_max: 1
+    hp_lp_both_forbidden: true
+  target_power:
+    vcc_nominal_v: 3.3
+    vcc_max_v: 3.6
+  recovery:
+    min_seconds_between_cycles: 0.02
+    max_cycles_per_minute: 600
+  rate:
+    max_attempts_per_second: 50
+
+discovery_workflow:
+  - "Verify a no-glitch baseline and record raw observations."
+  - "Start with low-energy, single-pulse timing discovery."
+  - "Expand only within the reviewed target safety envelope."
+  - "Preserve partial candidates and independently reproduce confirmed results."
+
+recipes:
+  discovery:
+    axes:
+      pulse_cycles: {start: 1, stop: 12, step: 1}
+      ext_offset: {start: 0, stop: 3000, step: 100}
+    samples_per_cell: 1
+    stop_on_success: true

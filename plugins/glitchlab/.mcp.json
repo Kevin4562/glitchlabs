@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "glitchlab": {
+      "command": "uv",
+      "args": ["run", "--locked", "--python", "3.13", "--project", "./server", "--quiet", "glitchlab-mcp"],
+      "cwd": ".",
+      "env_vars": ["GLITCHLAB_DATA", "GLITCHLAB_CONFIG", "GLITCHLAB_CONNECTOR_PATHS"],
+      "tool_timeout_sec": 900
+    }
+  }
+}

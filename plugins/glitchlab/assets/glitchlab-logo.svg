@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" role="img" aria-label="GlitchLab">
+  <rect width="720" height="180" rx="28" fill="#10151d"/>
+  <path d="M34 96h52l17-58 29 118 27-94 19 34h53" fill="none" stroke="#55e6a5" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="264" y="116" fill="#f4f7fb" font-family="Segoe UI,Arial,sans-serif" font-size="72" font-weight="700">GlitchLab</text>
+</svg>

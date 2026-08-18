@@ -1,0 +1,36 @@
+{
+  "name": "glitchlab",
+  "version": "2.0.0",
+  "description": "MCP-first fault-injection campaign control, evidence tracking, analysis, and browser visualization.",
+  "author": {
+    "name": "Kevin4562",
+    "url": "https://github.com/Kevin4562"
+  },
+  "homepage": "https://github.com/Kevin4562/glitchlabs",
+  "repository": "https://github.com/Kevin4562/glitchlabs",
+  "license": "MIT",
+  "keywords": ["fault-injection", "hardware-security", "mcp", "glitching", "chipwhisperer"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GlitchLab",
+    "shortDescription": "Run safe, evidence-preserving fault-injection campaigns",
+    "longDescription": "GlitchLab gives Codex a standalone local MCP server and browser UI for configuring bounded hardware fault-injection campaigns, recording raw evidence, exploring parameter spaces, and building private target connectors.",
+    "developerName": "Kevin4562",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/Kevin4562/glitchlabs",
+    "defaultPrompt": [
+      "Open GlitchLab in a new browser tab.",
+      "Help me create a connector for a new target.",
+      "Plan a safe discovery sweep for an unknown target."
+    ],
+    "brandColor": "#55E6A5",
+    "composerIcon": "./assets/glitchlab-mark.svg",
+    "logo": "./assets/glitchlab-logo.svg",
+    "screenshots": [
+      "./assets/screenshots/dashboard.jpg",
+      "./assets/screenshots/settings.jpg"
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

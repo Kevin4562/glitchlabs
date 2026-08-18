@@ -1,0 +1,4 @@
+interface:
+  display_name: "Operate GlitchLab"
+  short_description: "Configure targets and run safe glitch campaigns"
+  default_prompt: "Use $glitchlab to open GlitchLab and prepare a safe connector for my target."

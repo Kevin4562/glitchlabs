@@ -1,0 +1,6 @@
+[connector]
+id = "generic-example"
+display_name = "Generic connector example (template only)"
+description = "Non-hardware example that demonstrates the connector contract and fails closed."
+api_version = 1
+entrypoint = "connector:GenericExampleConnection"
